@@ -9,7 +9,12 @@ import android.widget.Button
 import android.widget.DatePicker
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import java.util.Calendar
@@ -17,10 +22,40 @@ import java.util.GregorianCalendar
 
 class MainActivity : AppCompatActivity() {
 
+    val dataModelList = mutableListOf<DataModel>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val database = Firebase.database
+        // .child(Firebase.auth.currentUser!!.uid) : UID 별 처리!
+        val myRef = database.getReference("myMemo").child(Firebase.auth.currentUser!!.uid)
+
+        // 화면의 리스트 뷰 가져오기
+        val listView = findViewById<ListView>(R.id.mainLV)
+        // 어뎁터 가져오기
+        val adapter_list = ListViewAdapter(dataModelList)
+
+        listView.adapter = adapter_list
+
+        // 데이터 가져오기
+        myRef.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // change 될때마다 중복으로 넣어준다. (아래 adapter_list.notifyDataSetChanged())
+                dataModelList.clear()
+                for(dataModel in snapshot.children) {
+                    dataModelList.add(dataModel.getValue(DataModel::class.java)!!)
+                }
+                // 데이터 변경 될 때마다 어댑터 리프래시 해줘라
+                adapter_list.notifyDataSetChanged()
+            }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+
+        })
 
         val writeButton = findViewById<ImageView>(R.id.writeBtn)
         writeButton.setOnClickListener {
@@ -58,19 +93,16 @@ class MainActivity : AppCompatActivity() {
 
                 val healthMemo = mAlertDialog.findViewById<EditText>(R.id.healthMemo)?.text.toString()
                 val date = mAlertDialog.findViewById<Button>(R.id.dateSelectBtn)?.text.toString()
-
-                val database = Firebase.database
-                val myRef = database.getReference("myMemo")
-
                 val model = DataModel(date,healthMemo)
-
-                Log.d("data Log","${healthMemo}, ${date}")
 
                 // insert
                 myRef.push().setValue(model)
-
                 // merge
                 //myRef.setValue(model)
+
+                // 창 끄기
+                mAlertDialog.dismiss()
+
             }
         }
 
