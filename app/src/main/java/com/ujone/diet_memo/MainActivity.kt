@@ -7,8 +7,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.DatePicker
+import android.widget.EditText
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
+import com.google.firebase.database.ktx.database
+import com.google.firebase.ktx.Firebase
 import java.util.Calendar
 import java.util.GregorianCalendar
 
@@ -50,6 +53,25 @@ class MainActivity : AppCompatActivity() {
                 dlg.show()
             }
 
+            val saveBtn = mAlertDialog.findViewById<Button>(R.id.saveBtn)
+            saveBtn?.setOnClickListener {
+
+                val healthMemo = mAlertDialog.findViewById<EditText>(R.id.healthMemo)?.text.toString()
+                val date = mAlertDialog.findViewById<Button>(R.id.dateSelectBtn)?.text.toString()
+
+                val database = Firebase.database
+                val myRef = database.getReference("myMemo")
+
+                val model = DataModel(date,healthMemo)
+
+                Log.d("data Log","${healthMemo}, ${date}")
+
+                // insert
+                myRef.push().setValue(model)
+
+                // merge
+                //myRef.setValue(model)
+            }
         }
 
     }
